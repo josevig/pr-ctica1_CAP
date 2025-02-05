@@ -3,53 +3,7 @@
 #include <time.h>
 #include <string.h>
 #include <math.h>
-
-/* Función para inicializar una matriz con valores aleatorios en [0,1) */
-void init_matrix(double *M, int rows, int cols) {
-    for (int i = 0; i < rows; i++)
-        for (int j = 0; j < cols; j++)
-            M[i * cols + j] = (double)rand() / (double)RAND_MAX;
-}
-
-/* Función para poner en cero una matriz */
-void zero_matrix(double *M, int rows, int cols) {
-    memset(M, 0, rows * cols * sizeof(double));
-}
-
-/* Multiplicación de matrices: versión ijk */
-void mult_ijk(double *A, double *B, double *C, int m, int k, int n) {
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            double sum = 0.0;
-            for (int l = 0; l < k; l++) {
-                sum += A[i * k + l] * B[l * n + j];
-            }
-            C[i * n + j] = sum;
-        }
-    }
-}
-
-/* Multiplicación de matrices: versión jki */
-void mult_jki(double *A, double *B, double *C, int m, int k, int n) {
-    for (int j = 0; j < n; j++) {
-        for (int l = 0; l < k; l++) {
-            for (int i = 0; i < m; i++) {
-                C[i * n + j] += A[i * k + l] * B[l * n + j];
-            }
-        }
-    }
-}
-
-/* Multiplicación de matrices: versión kji */
-void mult_kji(double *A, double *B, double *C, int m, int k, int n) {
-    for (int l = 0; l < k; l++) {
-        for (int j = 0; j < n; j++) {
-            for (int i = 0; i < m; i++) {
-                C[i * n + j] += A[i * k + l] * B[l * n + j];
-            }
-        }
-    }
-}
+#include "funciones_matriz.h"
 
 /* Tipo de puntero a función para las funciones de multiplicación */
 typedef void (*mult_func)(double*, double*, double*, int, int, int);
@@ -119,7 +73,7 @@ int main(void) {
         double times_ijk[10], times_jki[10], times_kji[10];
         /* Arreglos para almacenar GFLOPS por ejecución */
         double gflops_ijk[10], gflops_jki[10], gflops_kji[10];
-        /* Se calcula el número de operaciones: aprox. 2*m*k*n */
+        /* Se calcula el número de operaciones de punto flotante (FLOPS): aprox. 2*m*k*n */
         double ops = 2.0 * m * k * n;
 
         /* Ejecutar las tres versiones */
@@ -132,6 +86,13 @@ int main(void) {
             gflops_ijk[i] = ops / (times_ijk[i] * 1e9);
             gflops_jki[i] = ops / (times_jki[i] * 1e9);
             gflops_kji[i] = ops / (times_kji[i] * 1e9);
+            //Para evitar divisiones por 0 (Se asume un valor de tiempo minimo es de 0.000001)
+            if (times_ijk[i]<=1e-6)
+                gflops_ijk[i] = ops / 1e3;
+            if (times_jki[i]<=1e-6)
+                gflops_jki[i] = ops / 1e3;
+            if (times_kji[i]<=1e-6)
+                gflops_kji[i] = ops / 1e3;
         }
 
         /* Calcular medias y desviaciones de tiempos */
@@ -157,7 +118,7 @@ int main(void) {
         double eff_kji = (mean_gflops_kji / best_gflops) * 100.0;
 
         /* Mostrar resultados en consola */
-        printf("Resultados para dimension %d x %d:\n", dim, dim);
+        printf("Resultados para matriz de dimension %d x %d:\n", dim, dim);
         for (int i = 0; i < runs; i++) {
             printf("  Ejecucion %2d: tiempo (ijk) = %f s, GFLOPS = %f; tiempo (jki) = %f s, GFLOPS = %f; tiempo (kji) = %f s, GFLOPS = %f\n",
                    i + 1, times_ijk[i], gflops_ijk[i],
