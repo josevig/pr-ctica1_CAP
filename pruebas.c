@@ -54,7 +54,7 @@ void run_benchmark(mult_func func, int m, int k, int n, int runs, double *times)
 int main(void) {
     /* Dimensiones a probar: ejemplo con matrices cuadradas.
        Se crean archivos CSV separados para cada dimensión. */
-    int sizes[] = {128, 256, 512, 1024, 2048, 4096};
+    int sizes[] = {128, 256, 512, 1024, 2048}; //4096 Tarda demasiado tiempo
     int num_sizes = sizeof(sizes) / sizeof(sizes[0]);
     int runs = 10;
 
