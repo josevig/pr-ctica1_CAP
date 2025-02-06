@@ -71,8 +71,6 @@ int main(void) {
 
         /* Arreglos para almacenar los tiempos de cada algoritmo */
         double times_ijk[10], times_jki[10], times_kji[10];
-        /* Arreglos para almacenar GFLOPS por ejecución */
-        double gflops_ijk[10], gflops_jki[10], gflops_kji[10];
         /* Se calcula el número de operaciones de punto flotante (FLOPS): aprox. 2*m*k*n */
         double ops = 2.0 * m * k * n;
 
@@ -80,20 +78,6 @@ int main(void) {
         run_benchmark(mult_ijk, m, k, n, runs, times_ijk);
         run_benchmark(mult_jki, m, k, n, runs, times_jki);
         run_benchmark(mult_kji, m, k, n, runs, times_kji);
-
-        /* Calcular GFLOPS para cada ejecución */
-        for (int i = 0; i < runs; i++) {
-            gflops_ijk[i] = ops / (times_ijk[i] * 1e9);
-            gflops_jki[i] = ops / (times_jki[i] * 1e9);
-            gflops_kji[i] = ops / (times_kji[i] * 1e9);
-            //Para evitar divisiones por 0 (Se asume un valor de tiempo minimo es de 0.000001)
-            if (times_ijk[i]<=1e-6)
-                gflops_ijk[i] = ops / 1e3;
-            if (times_jki[i]<=1e-6)
-                gflops_jki[i] = ops / 1e3;
-            if (times_kji[i]<=1e-6)
-                gflops_kji[i] = ops / 1e3;
-        }
 
         /* Calcular medias y desviaciones de tiempos */
         double mean_ijk = mean(times_ijk, runs);
@@ -103,31 +87,23 @@ int main(void) {
         double std_jki = stddev(times_jki, runs, mean_jki);
         double std_kji = stddev(times_kji, runs, mean_kji);
 
-        /* Calcular medias de GFLOPS */
-        double mean_gflops_ijk = mean(gflops_ijk, runs);
-        double mean_gflops_jki = mean(gflops_jki, runs);
-        double mean_gflops_kji = mean(gflops_kji, runs);
+        /* Calcular la eficiencia relativa: expresada en % respecto al mejor tiempo de ejecución */
+        double best_meantime = mean_ijk;
+        if (mean_jki < best_meantime) best_meantime = mean_jki;
+        if (mean_kji < best_meantime) best_meantime = mean_kji;
 
-        /* Calcular la eficiencia relativa: expresada en % respecto a la mejor media en GFLOPS */
-        double best_gflops = mean_gflops_ijk;
-        if (mean_gflops_jki > best_gflops) best_gflops = mean_gflops_jki;
-        if (mean_gflops_kji > best_gflops) best_gflops = mean_gflops_kji;
-
-        double eff_ijk = (mean_gflops_ijk / best_gflops) * 100.0;
-        double eff_jki = (mean_gflops_jki / best_gflops) * 100.0;
-        double eff_kji = (mean_gflops_kji / best_gflops) * 100.0;
+        double eff_ijk = (best_meantime / mean_ijk) * 100.0;
+        double eff_jki = (best_meantime / mean_jki) * 100.0;
+        double eff_kji = (best_meantime / mean_kji) * 100.0;
 
         /* Mostrar resultados en consola */
         printf("Resultados para matriz de dimension %d x %d:\n", dim, dim);
         for (int i = 0; i < runs; i++) {
-            printf("  Ejecucion %2d: tiempo (ijk) = %f s, GFLOPS = %f; tiempo (jki) = %f s, GFLOPS = %f; tiempo (kji) = %f s, GFLOPS = %f\n",
-                   i + 1, times_ijk[i], gflops_ijk[i],
-                   times_jki[i], gflops_jki[i],
-                   times_kji[i], gflops_kji[i]);
+            printf("  Ejecucion %2d: tiempo (ijk) = %f s; tiempo (jki) = %f s; tiempo (kji) = %f s\n",
+                   i + 1, times_ijk[i], times_jki[i], times_kji[i]);
         }
         printf("  Medias de tiempo: ijk = %f s, jki = %f s, kji = %f s\n", mean_ijk, mean_jki, mean_kji);
         printf("  Desv.Std de tiempo: ijk = %f s, jki = %f s, kji = %f s\n", std_ijk, std_jki, std_kji);
-        printf("  Medias de GFLOPS: ijk = %f, jki = %f, kji = %f\n", mean_gflops_ijk, mean_gflops_jki, mean_gflops_kji);
         printf("  Eficiencia relativa: ijk = %.2f%%, jki = %.2f%%, kji = %.2f%%\n\n", eff_ijk, eff_jki, eff_kji);
 
         /* Escribir resultados en un archivo CSV.
@@ -141,18 +117,17 @@ int main(void) {
         }
 
         /* Encabezado del CSV */
-        fprintf(fp, "Ejecucion;Time_ijk(s);Time_jki(s);Time_kji(s);GFLOPS_ijk;GFLOPS_jki;GFLOPS_kji\n");
+        fprintf(fp, "Ejecucion;Time_ijk(s);Time_jki(s);Time_kji(s)\n");
         for (int i = 0; i < runs; i++) {
             fprintf(fp, "%d;%f;%f;%f;%f;%f;%f\n",
-                    i + 1, times_ijk[i], times_jki[i], times_kji[i],
-                    gflops_ijk[i], gflops_jki[i], gflops_kji[i]);
+                    i + 1, times_ijk[i], times_jki[i], times_kji[i]);
         }
         /* Líneas opcionales: promedios y desviaciones */
-        fprintf(fp, "Media;%f;%f;%f;%f;%f;%f\n",
-                mean_ijk, mean_jki, mean_kji, mean_gflops_ijk, mean_gflops_jki, mean_gflops_kji);
-        fprintf(fp, "DesvStd;%f;%f;%f;;;\n", std_ijk, std_jki, std_kji);
+        fprintf(fp, "Media;%f;%f;%f\n",
+                mean_ijk, mean_jki, mean_kji);
+        fprintf(fp, "DesvStd;%f;%f;%f\n", std_ijk, std_jki, std_kji);
         /* Eficiencia relativa */
-        fprintf(fp, "Eficiencia Relativa (%%);%f;%f;%f;;;\n", eff_ijk, eff_jki, eff_kji);
+        fprintf(fp, "Eficiencia Relativa (%%);%f;%f;%f\n", eff_ijk, eff_jki, eff_kji);
 
         fclose(fp);
         printf("Archivo CSV '%s' creado.\n", filename);
