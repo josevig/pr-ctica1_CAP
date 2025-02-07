@@ -71,8 +71,6 @@ int main(void) {
 
         /* Arreglos para almacenar los tiempos de cada algoritmo */
         double times_ijk[10], times_jki[10], times_kji[10];
-        /* Se calcula el número de operaciones de punto flotante (FLOPS): aprox. 2*m*k*n */
-        double ops = 2.0 * m * k * n;
 
         /* Ejecutar las tres versiones */
         run_benchmark(mult_ijk, m, k, n, runs, times_ijk);
@@ -119,7 +117,7 @@ int main(void) {
         /* Encabezado del CSV */
         fprintf(fp, "Ejecucion;Time_ijk(s);Time_jki(s);Time_kji(s)\n");
         for (int i = 0; i < runs; i++) {
-            fprintf(fp, "%d;%f;%f;%f;%f;%f;%f\n",
+            fprintf(fp, "%d;%f;%f;%f\n",
                     i + 1, times_ijk[i], times_jki[i], times_kji[i]);
         }
         /* Líneas opcionales: promedios y desviaciones */
